@@ -5,6 +5,7 @@ from __future__ import annotations
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import tool
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 
 
@@ -29,21 +30,22 @@ def search(query: str) -> str:
 
 def create_agent(
     model: BaseChatModel | None = None,
-) -> create_react_agent:  # type: ignore[type-arg]
+) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Create a ReAct agent with the given model.
 
     Parameters
     ----------
     model : BaseChatModel | None
-        The chat model to use. Defaults to ChatAnthropic with claude-sonnet-4-20250514.
+        The chat model to use. Defaults to ChatAnthropic with
+        claude-sonnet-4-20250514.
 
     Returns
     -------
-    CompiledGraph
+    CompiledStateGraph
         A compiled LangGraph agent.
     """
     if model is None:
-        model = ChatAnthropic(model="claude-sonnet-4-20250514")
+        model = ChatAnthropic(model="claude-sonnet-4-20250514")  # type: ignore[call-arg]
     return create_react_agent(model, [search])
 
 
