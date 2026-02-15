@@ -21,7 +21,7 @@ GENERATE_LESSON_PROMPT = ChatPromptTemplate.from_messages(
             "- Keep lessons self-contained and runnable\n"
             "- Include a `main()` function and `if __name__ == '__main__'` guard\n\n"
             "TEMPLATE (follow this structure):\n"
-            "```\n{template}\n```\n\n"
+            "`````\n{template}\n`````\n\n"
             "EXISTING LESSONS in this project (avoid overlap):\n"
             "{existing_lessons}\n\n"
             "The lesson number is {number} and filename is {filename}.",
@@ -30,7 +30,11 @@ GENERATE_LESSON_PROMPT = ChatPromptTemplate.from_messages(
             "human",
             "Generate a complete, self-contained Python lesson on: {topic}\n\n"
             "Domain: {domain_name}\n\n"
-            "Return ONLY the Python file content, no markdown fences.",
+            "OUTPUT RULES:\n"
+            "1. Return ONLY valid Python source code\n"
+            "2. Do NOT wrap the output in markdown code fences "
+            "(no ``` or ```python)\n"
+            "3. The first line must be a Python docstring or comment",
         ),
     ],
 )
@@ -51,10 +55,13 @@ FIX_LESSON_PROMPT = ChatPromptTemplate.from_messages(
         (
             "human",
             "The following code failed validation:\n\n"
-            "```python\n{code}\n```\n\n"
+            "`````python\n{code}\n`````\n\n"
             "Errors:\n{errors}\n\n"
-            "Fix ALL errors and return ONLY the corrected Python file "
-            "content, no markdown fences.",
+            "OUTPUT RULES:\n"
+            "1. Return ONLY valid Python source code\n"
+            "2. Do NOT wrap the output in markdown code fences "
+            "(no ``` or ```python)\n"
+            "3. The first line must be a Python docstring or comment",
         ),
     ],
 )
