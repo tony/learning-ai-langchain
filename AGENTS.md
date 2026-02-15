@@ -186,6 +186,69 @@ EOF
 )"
 ```
 
+## Testing Strategy
+
+### Testing Guidelines
+
+1. **Use functional tests only**: Write tests as standalone functions (`test_*`), not classes. Avoid `class TestFoo:` groupings — use descriptive function names and file organization instead. This applies to pytest tests, not doctests.
+
+2. **Use existing fixtures over mocks**
+   - Use fixtures from `conftest.py` instead of `monkeypatch` and `MagicMock` when available
+   - For lesson_generator, use provided fixtures: `sample_template`, `mock_project_dir`, `test_domain_config`
+   - Document in test docstrings why standard fixtures weren't used for exceptional cases
+
+3. **Preferred pytest patterns**
+   - Use `tmp_path` (pathlib.Path) fixture over Python's `tempfile`
+   - Use `monkeypatch` fixture over `unittest.mock`
+
+### Parametrized Tests
+
+Use `typing.NamedTuple` with a `test_id` field for parametrized test cases:
+
+```python
+class SomeFixture(t.NamedTuple):
+    test_id: str
+    input_value: str
+    expected: str
+
+SOME_FIXTURES: list[SomeFixture] = [
+    SomeFixture(
+        test_id="basic_case",
+        input_value="hello",
+        expected="HELLO",
+    ),
+    SomeFixture(
+        test_id="empty_string",
+        input_value="",
+        expected="",
+    ),
+]
+
+@pytest.mark.parametrize(
+    list(SomeFixture._fields),
+    SOME_FIXTURES,
+    ids=[test.test_id for test in SOME_FIXTURES],
+)
+def test_transform(
+    test_id: str,
+    input_value: str,
+    expected: str,
+) -> None:
+    """Transform should uppercase input."""
+    assert transform(input_value) == expected
+```
+
+### Test Structure
+
+```
+tests/
+├── conftest.py          # Shared fixtures (sample_template, mock_project_dir, etc.)
+├── test_domains.py      # Domain registry and validation
+├── test_graph.py        # Graph topology and mocked LLM paths
+├── test_models.py       # Pydantic model unit tests
+└── test_tools.py        # Tool functions (read_template, validate_in_temp, etc.)
+```
+
 ## Debugging Tips
 
 When stuck in debugging loops:
