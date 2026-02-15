@@ -39,7 +39,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--out",
         type=pathlib.Path,
         default=None,
-        help="Explicit output file path.",
+        help="Output directory (filename is auto-generated).",
     )
     parser.add_argument(
         "--dry-run",
@@ -87,7 +87,7 @@ def main() -> None:
 
     # Determine output directory
     if args.out:
-        target_dir = args.out.parent
+        target_dir = args.out
     elif config.project_path:
         env_ok, env_msg = validate_environment(config)
         if not env_ok:
