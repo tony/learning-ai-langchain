@@ -2,7 +2,7 @@
 name = "learning-ai-langchain"
 version = "0.1.0"
 description = "Minimal LangChain + LangGraph example with ReAct agent."
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 license = { text = "MIT" }
 dependencies = [
   "langgraph>=1.0.0",
@@ -39,14 +39,14 @@ packages = ["react_agent", "lesson_generator"]
 
 [tool.mypy]
 strict = true
-python_version = "3.10"
+python_version = "3.13"
 files = [
   "react_agent",
   "lesson_generator",
 ]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [

@@ -21,8 +21,8 @@ def test_pedagogy_style_values() -> None:
 
 
 def test_pedagogy_style_str_mixin() -> None:
-    """PedagogyStyle should have a useful str representation."""
-    assert str(PedagogyStyle.CONCEPT_FIRST) == "PedagogyStyle.CONCEPT_FIRST"
+    """StrEnum str() returns the value directly."""
+    assert str(PedagogyStyle.CONCEPT_FIRST) == "concept_first"
 
 
 def test_project_type_values() -> None:

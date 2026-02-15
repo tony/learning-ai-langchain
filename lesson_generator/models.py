@@ -8,7 +8,7 @@ import pathlib
 from pydantic import BaseModel, Field
 
 
-class PedagogyStyle(str, enum.Enum):
+class PedagogyStyle(enum.StrEnum):
     """Teaching approach for content generation.
 
     Each style maps to a different lesson structure and emphasis.
@@ -24,7 +24,7 @@ class PedagogyStyle(str, enum.Enum):
     """Litestar, FastAPI: functioning server/app with tests."""
 
 
-class ProjectType(str, enum.Enum):
+class ProjectType(enum.StrEnum):
     """Structure of the target learning project."""
 
     LESSON_BASED = "lesson_based"
