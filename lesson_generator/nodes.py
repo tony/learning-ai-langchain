@@ -186,7 +186,10 @@ def write_output(state: LessonGeneratorState) -> dict[str, t.Any]:
     target = (target_dir / metadata.filename).resolve()
     if not target.is_relative_to(target_dir):
         return {"status": "failed", "validation_errors": ["Path traversal detected"]}
-    write_lesson(target, state["rendered_code"], force=state.get("force", False))
+    try:
+        write_lesson(target, state["rendered_code"], force=state.get("force", False))
+    except FileExistsError:
+        return {"status": "failed", "validation_errors": [f"File exists: {target}"]}
     return {
         "output_path": str(target),
         "status": "committed",

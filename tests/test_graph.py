@@ -177,6 +177,34 @@ class TestLessonGraph:
         assert "/" not in output.name
         assert ".." not in output.name
 
+    def test_file_exists_returns_failed(self, tmp_path: pathlib.Path) -> None:
+        """Existing file without --force should return status='failed'."""
+        model = FakeListChatModel(responses=[VALID_LESSON])
+        graph = create_lesson_graph(model=model)
+        # First run — writes the file
+        result = graph.invoke(
+            {
+                "topic": "test concept",
+                "domain_name": "_test_graph",
+                "target_dir": tmp_path,
+                "max_iterations": 3,
+            },
+        )
+        assert result["status"] == "committed"
+
+        # Second run — same topic, no force → should fail gracefully
+        model2 = FakeListChatModel(responses=[VALID_LESSON])
+        graph2 = create_lesson_graph(model=model2)
+        result2 = graph2.invoke(
+            {
+                "topic": "test concept",
+                "domain_name": "_test_graph",
+                "target_dir": tmp_path,
+                "max_iterations": 3,
+            },
+        )
+        assert result2["status"] == "failed"
+
     def test_max_retries_respected(self, tmp_path: pathlib.Path) -> None:
         """After max retries, should stop retrying."""
         bad_code = "def broken( -> None:\n    pass"
