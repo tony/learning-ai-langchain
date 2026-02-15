@@ -83,7 +83,11 @@ def main() -> None:
     if not args.domain or not args.topic:
         parser.error("--domain and --topic are required.")
 
-    config = get_domain(args.domain)
+    try:
+        config = get_domain(args.domain)
+    except KeyError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     # Determine output directory
     if args.out:
