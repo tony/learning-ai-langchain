@@ -7,6 +7,7 @@ import typing as t
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from langgraph.graph import END, START
 
 from lesson_generator.domains import _register
 from lesson_generator.graph import _build_graph
@@ -87,8 +88,8 @@ def test_graph_has_expected_nodes() -> None:
         "validate_lesson",
         "fix_lesson",
         "write_output",
-        "__start__",
-        "__end__",
+        START,
+        END,
     }
     assert expected == node_names
 
