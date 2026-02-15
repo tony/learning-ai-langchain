@@ -6,7 +6,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from .agent import graph
+from .agent import create_react_graph
 
 DEFAULT_QUERY = "What is the weather in SF?"
 
@@ -17,6 +17,7 @@ def main() -> None:
 
     query = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else DEFAULT_QUERY
 
+    graph = create_react_graph()
     result = graph.invoke(
         {"messages": [{"role": "user", "content": query}]},
     )

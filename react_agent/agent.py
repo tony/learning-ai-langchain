@@ -46,9 +46,20 @@ def create_agent(
     """
     if model is None:
         model = ChatAnthropic(model="claude-sonnet-4-5")  # type: ignore[call-arg]
-    # NOTE: create_react_agent is deprecated in favor of langchain.agents.create_agent,
-    # but the replacement is not yet available in the current environment.
     return create_react_agent(model, [search])
 
 
-graph = create_agent()
+def create_react_graph() -> CompiledStateGraph:  # type: ignore[type-arg]
+    """Zero-arg factory for ``langgraph.json``.
+
+    The LangGraph dev server classifies factory functions by parameter
+    count: a 1-param factory receives the runtime ``config`` dict as its
+    first argument, which would shadow a ``model`` parameter.  This
+    wrapper takes no arguments so the server calls it cleanly.
+
+    Returns
+    -------
+    CompiledStateGraph
+        Compiled LangGraph ready for invocation.
+    """
+    return create_agent()
