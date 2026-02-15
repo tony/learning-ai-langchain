@@ -4,46 +4,42 @@ from __future__ import annotations
 
 import typing as t
 
-from pydantic import Field
+from pydantic import BaseModel, Field
+
+#: Valid domain identifiers — must match keys in ``domains._REGISTRY``.
+DomainName = t.Literal["dsa", "asyncio"]
 
 
-class LessonGeneratorInput(t.TypedDict, total=False):
+class LessonGeneratorInput(BaseModel):
     """Input schema for the lesson generation graph.
 
     Defines the fields that callers (CLI, Studio UI) must or may provide
-    when invoking the graph.
+    when invoking the graph.  Uses Pydantic ``BaseModel`` so that
+    LangGraph Studio renders descriptions and enum dropdowns.
     """
 
-    topic: t.Required[
-        t.Annotated[
-            str,
-            Field(
-                description="Lesson topic, e.g. 'hash tables'",
-            ),
-        ]
-    ]
-    domain_name: t.Required[
-        t.Annotated[
-            str,
-            Field(description="Domain: 'dsa' or 'asyncio'"),
-        ]
-    ]
-    target_dir: t.Annotated[
-        str,
-        Field(description="Output directory (defaults to domain project)"),
-    ]
-    max_iterations: t.Annotated[
-        int,
-        Field(description="Max retry attempts (default: 3)"),
-    ]
-    dry_run: t.Annotated[
-        bool,
-        Field(description="Validate only, don't write to disk"),
-    ]
-    force: t.Annotated[
-        bool,
-        Field(description="Overwrite existing lesson files"),
-    ]
+    topic: str = Field(
+        description="Lesson topic, e.g. 'hash tables'",
+    )
+    domain_name: DomainName = Field(
+        description="Learning domain to generate a lesson for",
+    )
+    target_dir: str | None = Field(
+        default=None,
+        description="Output directory (defaults to domain project)",
+    )
+    max_iterations: int = Field(
+        default=3,
+        description="Max generation/fix retry attempts",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate only, don't write to disk",
+    )
+    force: bool = Field(
+        default=False,
+        description="Overwrite existing lesson files",
+    )
 
 
 class LessonGeneratorState(t.TypedDict, total=False):
