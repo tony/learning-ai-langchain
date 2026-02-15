@@ -11,6 +11,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from lesson_generator.domains import _register
 from lesson_generator.graph import create_lesson_graph
 from lesson_generator.models import DomainConfig, PedagogyStyle, ProjectType
+from lesson_generator.state import LessonGeneratorState
 
 VALID_LESSON = '''"""Test lesson."""
 
@@ -178,32 +179,22 @@ class TestLessonGraph:
         assert ".." not in output.name
 
     def test_file_exists_returns_failed(self, tmp_path: pathlib.Path) -> None:
-        """Existing file without --force should return status='failed'."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        # First run — writes the file
-        result = graph.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": tmp_path,
-                "max_iterations": 3,
-            },
-        )
-        assert result["status"] == "committed"
+        """FileExistsError in write_output should return status='failed'."""
+        from lesson_generator.models import LessonMetadata
+        from lesson_generator.nodes import write_output
 
-        # Second run — same topic, no force → should fail gracefully
-        model2 = FakeListChatModel(responses=[VALID_LESSON])
-        graph2 = create_lesson_graph(model=model2)
-        result2 = graph2.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": tmp_path,
-                "max_iterations": 3,
-            },
-        )
-        assert result2["status"] == "failed"
+        # Pre-create the collision file
+        (tmp_path / "001_topic.py").write_text("# existing", encoding="utf-8")
+
+        metadata = LessonMetadata(number=1, title="topic", filename="001_topic.py")
+        state: LessonGeneratorState = {
+            "validation_ok": True,
+            "target_dir": tmp_path,
+            "rendered_code": "# new content",
+            "metadata_json": metadata.model_dump_json(),
+        }
+        result = write_output(state)
+        assert result["status"] == "failed"
 
     def test_max_retries_respected(self, tmp_path: pathlib.Path) -> None:
         """After max retries, should stop retrying."""

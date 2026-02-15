@@ -42,7 +42,9 @@ def load_context(state: LessonGeneratorState) -> dict[str, t.Any]:
     """
     config = get_domain(state["domain_name"])
     template = read_template(config)
-    existing = list_existing_lessons(config)
+    target_dir = state.get("target_dir")
+    override = pathlib.Path(target_dir) if target_dir is not None else None
+    existing = list_existing_lessons(config, target_dir=override)
     return {
         "template_content": template,
         "existing_lessons": existing,
@@ -70,7 +72,9 @@ def make_generate_node(
     def generate_lesson(state: LessonGeneratorState) -> dict[str, t.Any]:
         """Generate a Python lesson using the LLM."""
         config = get_domain(state["domain_name"])
-        number = next_lesson_number(config)
+        target_dir = state.get("target_dir")
+        override = pathlib.Path(target_dir) if target_dir is not None else None
+        number = next_lesson_number(config, target_dir=override)
         safe_topic = re.sub(r"[^a-z0-9_]", "_", state["topic"].lower())
         safe_topic = re.sub(r"_+", "_", safe_topic).strip("_")
         filename = f"{number:03d}_{safe_topic}.py"
