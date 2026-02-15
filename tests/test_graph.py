@@ -228,6 +228,25 @@ def test_graph_strips_code_fences(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.usefixtures("_register_test_domain")
+def test_graph_default_target_dir(tmp_path: pathlib.Path) -> None:
+    """Omitting target_dir should fall back to domain project_path/lesson_dir."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = _build_graph(model)
+    result = graph.invoke(
+        {
+            "topic": "default dir",
+            "domain_name": "_test_graph",
+            "max_iterations": 3,
+        },
+    )
+    assert result["status"] == "committed"
+    output = pathlib.Path(result["output_path"])
+    # Should land inside project_path/lesson_dir ("src")
+    assert output.parent == tmp_path / "src"
+    assert output.exists()
+
+
+@pytest.mark.usefixtures("_register_test_domain")
 def test_graph_max_retries_respected(tmp_path: pathlib.Path) -> None:
     """After max retries, should stop retrying."""
     bad_code = "def broken( -> None:\n    pass"

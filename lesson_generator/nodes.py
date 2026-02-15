@@ -217,7 +217,19 @@ def write_output(state: LessonGeneratorState) -> dict[str, t.Any]:
         return {"status": "dry_run"}
 
     metadata = LessonMetadata.model_validate_json(state["metadata_json"])
-    target_dir = pathlib.Path(state["target_dir"]).resolve()
+    raw_target = state.get("target_dir")
+    if raw_target is not None:
+        target_dir = pathlib.Path(raw_target).resolve()
+    else:
+        config = get_domain(state["domain_name"])
+        if config.project_path is None:
+            return {
+                "status": "failed",
+                "validation_errors": [
+                    "No target_dir provided and domain has no project_path",
+                ],
+            }
+        target_dir = (config.project_path / config.lesson_dir).resolve()
     target = (target_dir / metadata.filename).resolve()
     if not target.is_relative_to(target_dir):
         return {"status": "failed", "validation_errors": ["Path traversal detected"]}
