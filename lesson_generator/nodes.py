@@ -10,6 +10,7 @@ from __future__ import annotations
 import pathlib
 import re
 import typing as t
+from collections.abc import Callable
 
 from langchain_core.language_models import BaseChatModel
 
@@ -55,7 +56,7 @@ def load_context(state: LessonGeneratorState) -> dict[str, t.Any]:
 
 def make_generate_node(
     model: BaseChatModel,
-) -> t.Callable[[LessonGeneratorState], dict[str, t.Any]]:
+) -> Callable[[LessonGeneratorState], dict[str, t.Any]]:
     """Create the ``generate_lesson`` node bound to a specific model.
 
     Parameters
@@ -132,7 +133,7 @@ def validate_lesson(state: LessonGeneratorState) -> dict[str, t.Any]:
 
 def make_fix_node(
     model: BaseChatModel,
-) -> t.Callable[[LessonGeneratorState], dict[str, t.Any]]:
+) -> Callable[[LessonGeneratorState], dict[str, t.Any]]:
     """Create the ``fix_lesson`` node bound to a specific model.
 
     Parameters

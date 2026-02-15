@@ -46,6 +46,8 @@ def create_agent(
     """
     if model is None:
         model = ChatAnthropic(model="claude-sonnet-4-5")  # type: ignore[call-arg]
+    # NOTE: create_react_agent is deprecated in favor of langchain.agents.create_agent,
+    # but the replacement is not yet available in the current environment.
     return create_react_agent(model, [search])
 
 
