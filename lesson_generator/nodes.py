@@ -143,6 +143,10 @@ def make_generate_node(
 def validate_lesson(state: LessonGeneratorState) -> dict[str, t.Any]:
     """Validate generated code in a temporary directory.
 
+    If ``ruff format`` normalizes the code, the formatted version
+    replaces ``rendered_code`` in state so the final output is
+    properly formatted.
+
     Parameters
     ----------
     state : LessonGeneratorState
@@ -151,14 +155,18 @@ def validate_lesson(state: LessonGeneratorState) -> dict[str, t.Any]:
     Returns
     -------
     dict[str, Any]
-        State updates: ``validation_ok``, ``validation_errors``.
+        State updates: ``validation_ok``, ``validation_errors``,
+        and optionally ``rendered_code`` (when formatting changed it).
     """
     config = get_domain(state["domain_name"])
     result = validate_in_temp(state["rendered_code"], config)
-    return {
+    updates: dict[str, t.Any] = {
         "validation_ok": result.is_valid,
         "validation_errors": result.errors,
     }
+    if result.normalized_code is not None:
+        updates["rendered_code"] = result.normalized_code
+    return updates
 
 
 def make_fix_node(

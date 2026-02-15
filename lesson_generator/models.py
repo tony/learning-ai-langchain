@@ -106,8 +106,12 @@ class ValidationResult(BaseModel):
         Error messages from failed checks.
     tools_run : list[str]
         Names of validation tools that were executed.
+    normalized_code : str | None
+        Code after ``ruff format`` normalization, or ``None`` if formatting
+        did not change the code.
     """
 
     is_valid: bool
     errors: list[str] = Field(default_factory=list)
     tools_run: list[str] = Field(default_factory=list)
+    normalized_code: str | None = None

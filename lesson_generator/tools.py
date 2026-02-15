@@ -109,23 +109,29 @@ def next_lesson_number(
 def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
     """Validate generated code in a temporary directory.
 
-    Writes the code to a temp file, then runs ``ruff check`` and
-    optionally ``mypy --strict`` against it.
+    Runs the full quality pipeline: syntax check, ``ruff format``
+    (normalization), ``ruff check``, ``mypy``, and ``pytest
+    --doctest-modules``.  Normalized code (after ``ruff format``) is
+    returned in :attr:`ValidationResult.normalized_code` when formatting
+    changed the input.
 
     Parameters
     ----------
     code : str
         Python source code to validate.
     config : DomainConfig
-        Domain configuration (controls mypy strictness).
+        Domain configuration (controls mypy strictness and doctest
+        strategy).
 
     Returns
     -------
     ValidationResult
-        Validation outcome with errors and tools run.
+        Validation outcome with errors, tools run, and optionally
+        normalized code.
     """
     errors: list[str] = []
     tools_run: list[str] = []
+    normalized_code: str | None = None
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = pathlib.Path(tmpdir) / "lesson.py"
@@ -142,6 +148,25 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
             )
         tools_run.append("compile")
 
+        # --- ruff format (normalization) ---
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "ruff", "format", str(tmp_path)],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            return ValidationResult(
+                is_valid=False,
+                errors=["ruff format: timed out after 120s"],
+                tools_run=[*tools_run, "ruff_format"],
+            )
+        tools_run.append("ruff_format")
+        formatted = tmp_path.read_text(encoding="utf-8")
+        if formatted != code:
+            normalized_code = formatted
+
         # --- ruff check ---
         try:
             ruff_result = subprocess.run(
@@ -155,6 +180,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 is_valid=False,
                 errors=["ruff: timed out after 120s"],
                 tools_run=[*tools_run, "ruff"],
+                normalized_code=normalized_code,
             )
         tools_run.append("ruff")
         if ruff_result.returncode != 0:
@@ -187,6 +213,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 is_valid=False,
                 errors=[*errors, "mypy: timed out after 120s"],
                 tools_run=[*tools_run, "mypy"],
+                normalized_code=normalized_code,
             )
         tools_run.append("mypy")
         if mypy_result.returncode != 0:
@@ -195,10 +222,49 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 msg = f"{msg}\nstderr: {mypy_result.stderr.strip()}"
             errors.append(f"mypy: {msg}")
 
+        # --- pytest --doctest-modules ---
+        if config.doctest_strategy != "skip":
+            pytest_args = [
+                sys.executable,
+                "-m",
+                "pytest",
+                "--doctest-modules",
+                str(tmp_path),
+            ]
+            if config.doctest_strategy == "ellipsis":
+                pytest_args.extend(
+                    [
+                        "-o",
+                        "doctest_optionflags=ELLIPSIS NORMALIZE_WHITESPACE",
+                    ]
+                )
+            try:
+                pytest_result = subprocess.run(
+                    pytest_args,
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                )
+            except subprocess.TimeoutExpired:
+                return ValidationResult(
+                    is_valid=False,
+                    errors=[*errors, "pytest: timed out after 120s"],
+                    tools_run=[*tools_run, "pytest"],
+                    normalized_code=normalized_code,
+                )
+            tools_run.append("pytest")
+            # Exit code 5 means "no tests collected" — not a failure.
+            if pytest_result.returncode not in (0, 5):
+                msg = pytest_result.stdout.strip()
+                if pytest_result.stderr.strip():
+                    msg = f"{msg}\nstderr: {pytest_result.stderr.strip()}"
+                errors.append(f"pytest: {msg}")
+
     return ValidationResult(
         is_valid=len(errors) == 0,
         errors=errors,
         tools_run=tools_run,
+        normalized_code=normalized_code,
     )
 
 

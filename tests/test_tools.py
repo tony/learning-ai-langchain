@@ -137,7 +137,7 @@ def test_next_lesson_number_starts_at_one_when_empty(
 
 
 def test_validate_in_temp_valid_code() -> None:
-    """validate_in_temp should run compile check on valid code."""
+    """validate_in_temp should run all validation tools on valid code."""
     code = (
         '"""Valid module."""\n\n'
         "from __future__ import annotations\n\n\n"
@@ -152,7 +152,12 @@ def test_validate_in_temp_valid_code() -> None:
         strict_mypy=False,
     )
     result = validate_in_temp(code, config)
+    assert result.is_valid
     assert "compile" in result.tools_run
+    assert "ruff_format" in result.tools_run
+    assert "ruff" in result.tools_run
+    assert "mypy" in result.tools_run
+    assert "pytest" in result.tools_run
 
 
 def test_validate_in_temp_syntax_error() -> None:
@@ -166,6 +171,95 @@ def test_validate_in_temp_syntax_error() -> None:
     result = validate_in_temp(code, config)
     assert not result.is_valid
     assert any("Syntax" in e for e in result.errors)
+
+
+def test_validate_in_temp_normalizes_formatting() -> None:
+    """validate_in_temp should auto-format code and return normalized_code."""
+    # Extra blank lines that ruff format will remove
+    code = (
+        '"""Valid module."""\n\n'
+        "from __future__ import annotations\n\n\n\n\n"
+        "def main() -> None:\n"
+        '    """Run."""\n'
+        '    print("hello")\n'
+    )
+    config = DomainConfig(
+        name="test",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+        strict_mypy=False,
+    )
+    result = validate_in_temp(code, config)
+    assert result.is_valid
+    assert result.normalized_code is not None
+    assert result.normalized_code != code
+
+
+def test_validate_in_temp_no_normalize_when_already_formatted() -> None:
+    """validate_in_temp should not set normalized_code when code is clean."""
+    code = (
+        '"""Valid module."""\n\n'
+        "from __future__ import annotations\n\n\n"
+        "def main() -> None:\n"
+        '    """Run."""\n'
+        '    print("hello")\n'
+    )
+    config = DomainConfig(
+        name="test",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+        strict_mypy=False,
+    )
+    result = validate_in_temp(code, config)
+    assert result.is_valid
+    assert result.normalized_code is None
+
+
+def test_validate_in_temp_failing_doctest() -> None:
+    """validate_in_temp should detect failing doctests."""
+    code = (
+        '"""Module with bad doctest."""\n\n'
+        "from __future__ import annotations\n\n\n"
+        "def add(a: int, b: int) -> int:\n"
+        '    """Add two numbers.\n\n'
+        "    Examples\n"
+        "    --------\n"
+        "    >>> add(1, 2)\n"
+        "    999\n"
+        '    """\n'
+        "    return a + b\n"
+    )
+    config = DomainConfig(
+        name="test",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+        strict_mypy=False,
+    )
+    result = validate_in_temp(code, config)
+    assert not result.is_valid
+    assert "pytest" in result.tools_run
+    assert any("pytest" in e for e in result.errors)
+
+
+def test_validate_in_temp_skips_doctest_when_configured() -> None:
+    """validate_in_temp should skip pytest when doctest_strategy='skip'."""
+    code = (
+        '"""Valid module."""\n\n'
+        "from __future__ import annotations\n\n\n"
+        "def main() -> None:\n"
+        '    """Run."""\n'
+        '    print("hello")\n'
+    )
+    config = DomainConfig(
+        name="test",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+        strict_mypy=False,
+        doctest_strategy="skip",
+    )
+    result = validate_in_temp(code, config)
+    assert result.is_valid
+    assert "pytest" not in result.tools_run
 
 
 def test_write_lesson_creates_file(tmp_path: pathlib.Path) -> None:
