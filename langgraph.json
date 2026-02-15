@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "lesson_generator": "./lesson_generator/graph.py:create_lesson_graph",
+    "react_agent": "./react_agent/agent.py:graph"
+  },
+  "env": ".env"
+}

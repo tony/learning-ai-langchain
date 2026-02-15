@@ -74,6 +74,9 @@ target/
 # Environment
 .env
 
+# LangGraph dev server
+.langgraph_api/
+
 # Claude code
 **/CLAUDE.local.md
 **/CLAUDE.*.md

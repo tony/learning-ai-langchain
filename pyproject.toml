@@ -27,6 +27,7 @@ dev = [
   "pytest-asyncio",
   "ruff",
   "mypy",
+  "langgraph-cli[inmem]>=0.4.12",
 ]
 
 [build-system]
