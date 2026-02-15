@@ -101,7 +101,7 @@ class TestLessonGraph:
             {
                 "topic": "test concept",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 3,
             },
         )
@@ -116,7 +116,7 @@ class TestLessonGraph:
             {
                 "topic": "test concept",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 3,
                 "dry_run": True,
             },
@@ -135,7 +135,7 @@ class TestLessonGraph:
             {
                 "topic": "test concept",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 3,
             },
         )
@@ -150,7 +150,7 @@ class TestLessonGraph:
             {
                 "topic": "test concept",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 3,
                 "force": True,
             },
@@ -165,7 +165,7 @@ class TestLessonGraph:
             {
                 "topic": "foo/../../../escape",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 3,
             },
         )
@@ -188,7 +188,7 @@ class TestLessonGraph:
         metadata = LessonMetadata(number=1, title="topic", filename="001_topic.py")
         state: LessonGeneratorState = {
             "validation_ok": True,
-            "target_dir": tmp_path,
+            "target_dir": str(tmp_path),
             "rendered_code": "# new content",
             "metadata_json": metadata.model_dump_json(),
         }
@@ -206,7 +206,7 @@ class TestLessonGraph:
             {
                 "topic": "broken",
                 "domain_name": "_test_graph",
-                "target_dir": tmp_path,
+                "target_dir": str(tmp_path),
                 "max_iterations": 2,
             },
         )

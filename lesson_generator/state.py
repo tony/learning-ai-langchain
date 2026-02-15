@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pathlib
 import typing as t
 
 
@@ -15,8 +14,9 @@ class LessonGeneratorState(t.TypedDict, total=False):
         The lesson topic to generate content for.
     domain_name : str
         Name of the domain (e.g. ``"dsa"``, ``"asyncio"``).
-    target_dir : pathlib.Path
-        Directory where the generated lesson will be written.
+    target_dir : str
+        Directory where the generated lesson will be written (string for
+        JSON serialization safety).
     template_content : str
         Content of the lesson template for this domain.
     existing_lessons : list[str]
@@ -46,7 +46,7 @@ class LessonGeneratorState(t.TypedDict, total=False):
 
     topic: str
     domain_name: str
-    target_dir: pathlib.Path
+    target_dir: str
     template_content: str
     existing_lessons: list[str]
     rendered_code: str
