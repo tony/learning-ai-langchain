@@ -68,146 +68,157 @@ def _register_test_domain(tmp_path: pathlib.Path) -> t.Iterator[None]:
 
 
 @pytest.mark.usefixtures("_register_test_domain")
-class TestLessonGraph:
-    """Tests for the lesson generation graph."""
+def test_graph_compiles() -> None:
+    """Graph should compile without errors."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    assert graph is not None
 
-    def test_graph_compiles(self) -> None:
-        """Graph should compile without errors."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        assert graph is not None
 
-    def test_graph_has_expected_nodes(self) -> None:
-        """Graph should contain all pipeline nodes."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        node_names = set(graph.get_graph().nodes)
-        expected = {
-            "load_context",
-            "generate_lesson",
-            "validate_lesson",
-            "fix_lesson",
-            "write_output",
-            "__start__",
-            "__end__",
-        }
-        assert expected == node_names
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_has_expected_nodes() -> None:
+    """Graph should contain all pipeline nodes."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    node_names = set(graph.get_graph().nodes)
+    expected = {
+        "load_context",
+        "generate_lesson",
+        "validate_lesson",
+        "fix_lesson",
+        "write_output",
+        "__start__",
+        "__end__",
+    }
+    assert expected == node_names
 
-    def test_success_path(self, tmp_path: pathlib.Path) -> None:
-        """Valid code should flow through to committed status."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        result = graph.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 3,
-            },
-        )
-        assert result["status"] == "committed"
-        assert pathlib.Path(result["output_path"]).exists()
 
-    def test_dry_run_skips_write(self, tmp_path: pathlib.Path) -> None:
-        """dry_run=True should skip writing and return status 'dry_run'."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        result = graph.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 3,
-                "dry_run": True,
-            },
-        )
-        assert result["status"] == "dry_run"
-        # No file should have been written
-        py_files = list(tmp_path.glob("*.py"))
-        assert py_files == []
-
-    def test_force_overwrites_existing(self, tmp_path: pathlib.Path) -> None:
-        """force=True should overwrite an existing lesson file."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        # Create an existing file that will collide
-        result = graph.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 3,
-            },
-        )
-        assert result["status"] == "committed"
-        existing_path = pathlib.Path(result["output_path"])
-        assert existing_path.exists()
-
-        # Re-run with force — should overwrite
-        model2 = FakeListChatModel(responses=[VALID_LESSON])
-        graph2 = create_lesson_graph(model=model2)
-        result2 = graph2.invoke(
-            {
-                "topic": "test concept",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 3,
-                "force": True,
-            },
-        )
-        assert result2["status"] == "committed"
-
-    def test_topic_sanitized_in_filename(self, tmp_path: pathlib.Path) -> None:
-        """Topics with path traversal characters should be sanitized."""
-        model = FakeListChatModel(responses=[VALID_LESSON])
-        graph = create_lesson_graph(model=model)
-        result = graph.invoke(
-            {
-                "topic": "foo/../../../escape",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 3,
-            },
-        )
-        assert result["status"] == "committed"
-        output = pathlib.Path(result["output_path"])
-        # File must be inside target_dir
-        assert output.resolve().is_relative_to(tmp_path.resolve())
-        # Filename must not contain path separators
-        assert "/" not in output.name
-        assert ".." not in output.name
-
-    def test_file_exists_returns_failed(self, tmp_path: pathlib.Path) -> None:
-        """FileExistsError in write_output should return status='failed'."""
-        from lesson_generator.models import LessonMetadata
-        from lesson_generator.nodes import write_output
-
-        # Pre-create the collision file
-        (tmp_path / "001_topic.py").write_text("# existing", encoding="utf-8")
-
-        metadata = LessonMetadata(number=1, title="topic", filename="001_topic.py")
-        state: LessonGeneratorState = {
-            "validation_ok": True,
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_success_path(tmp_path: pathlib.Path) -> None:
+    """Valid code should flow through to committed status."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    result = graph.invoke(
+        {
+            "topic": "test concept",
+            "domain_name": "_test_graph",
             "target_dir": str(tmp_path),
-            "rendered_code": "# new content",
-            "metadata_json": metadata.model_dump_json(),
-        }
-        result = write_output(state)
-        assert result["status"] == "failed"
+            "max_iterations": 3,
+        },
+    )
+    assert result["status"] == "committed"
+    assert pathlib.Path(result["output_path"]).exists()
 
-    def test_max_retries_respected(self, tmp_path: pathlib.Path) -> None:
-        """After max retries, should stop retrying."""
-        bad_code = "def broken( -> None:\n    pass"
-        # Provide enough responses for generate + max_retries fixes
-        responses = [bad_code] * 5
-        model = FakeListChatModel(responses=responses)
-        graph = create_lesson_graph(model=model)
-        result = graph.invoke(
-            {
-                "topic": "broken",
-                "domain_name": "_test_graph",
-                "target_dir": str(tmp_path),
-                "max_iterations": 2,
-            },
-        )
-        assert result["status"] == "failed"
+
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_dry_run_skips_write(tmp_path: pathlib.Path) -> None:
+    """dry_run=True should skip writing and return status 'dry_run'."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    result = graph.invoke(
+        {
+            "topic": "test concept",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 3,
+            "dry_run": True,
+        },
+    )
+    assert result["status"] == "dry_run"
+    # No file should have been written
+    py_files = list(tmp_path.glob("*.py"))
+    assert py_files == []
+
+
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_force_overwrites_existing(tmp_path: pathlib.Path) -> None:
+    """force=True should overwrite an existing lesson file."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    # Create an existing file that will collide
+    result = graph.invoke(
+        {
+            "topic": "test concept",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 3,
+        },
+    )
+    assert result["status"] == "committed"
+    existing_path = pathlib.Path(result["output_path"])
+    assert existing_path.exists()
+
+    # Re-run with force — should overwrite
+    model2 = FakeListChatModel(responses=[VALID_LESSON])
+    graph2 = create_lesson_graph(model=model2)
+    result2 = graph2.invoke(
+        {
+            "topic": "test concept",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 3,
+            "force": True,
+        },
+    )
+    assert result2["status"] == "committed"
+
+
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_topic_sanitized_in_filename(tmp_path: pathlib.Path) -> None:
+    """Topics with path traversal characters should be sanitized."""
+    model = FakeListChatModel(responses=[VALID_LESSON])
+    graph = create_lesson_graph(model=model)
+    result = graph.invoke(
+        {
+            "topic": "foo/../../../escape",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 3,
+        },
+    )
+    assert result["status"] == "committed"
+    output = pathlib.Path(result["output_path"])
+    # File must be inside target_dir
+    assert output.resolve().is_relative_to(tmp_path.resolve())
+    # Filename must not contain path separators
+    assert "/" not in output.name
+    assert ".." not in output.name
+
+
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_file_exists_returns_failed(tmp_path: pathlib.Path) -> None:
+    """FileExistsError in write_output should return status='failed'."""
+    from lesson_generator.models import LessonMetadata
+    from lesson_generator.nodes import write_output
+
+    # Pre-create the collision file
+    (tmp_path / "001_topic.py").write_text("# existing", encoding="utf-8")
+
+    metadata = LessonMetadata(number=1, title="topic", filename="001_topic.py")
+    state: LessonGeneratorState = {
+        "validation_ok": True,
+        "target_dir": str(tmp_path),
+        "rendered_code": "# new content",
+        "metadata_json": metadata.model_dump_json(),
+    }
+    result = write_output(state)
+    assert result["status"] == "failed"
+
+
+@pytest.mark.usefixtures("_register_test_domain")
+def test_graph_max_retries_respected(tmp_path: pathlib.Path) -> None:
+    """After max retries, should stop retrying."""
+    bad_code = "def broken( -> None:\n    pass"
+    # Provide enough responses for generate + max_retries fixes
+    responses = [bad_code] * 5
+    model = FakeListChatModel(responses=responses)
+    graph = create_lesson_graph(model=model)
+    result = graph.invoke(
+        {
+            "topic": "broken",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 2,
+        },
+    )
+    assert result["status"] == "failed"
