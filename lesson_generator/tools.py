@@ -143,11 +143,19 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
         tools_run.append("compile")
 
         # --- ruff check ---
-        ruff_result = subprocess.run(
-            [sys.executable, "-m", "ruff", "check", str(tmp_path)],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            ruff_result = subprocess.run(
+                [sys.executable, "-m", "ruff", "check", str(tmp_path)],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            return ValidationResult(
+                is_valid=False,
+                errors=["ruff: timed out after 120s"],
+                tools_run=[*tools_run, "ruff"],
+            )
         tools_run.append("ruff")
         if ruff_result.returncode != 0:
             errors.append(f"ruff: {ruff_result.stdout.strip()}")
@@ -164,11 +172,19 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
         else:
             mypy_args = [sys.executable, "-m", "mypy", str(tmp_path)]
 
-        mypy_result = subprocess.run(
-            mypy_args,
-            capture_output=True,
-            text=True,
-        )
+        try:
+            mypy_result = subprocess.run(
+                mypy_args,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            return ValidationResult(
+                is_valid=False,
+                errors=[*errors, "mypy: timed out after 120s"],
+                tools_run=[*tools_run, "mypy"],
+            )
         tools_run.append("mypy")
         if mypy_result.returncode != 0:
             errors.append(f"mypy: {mypy_result.stdout.strip()}")
