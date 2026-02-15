@@ -126,6 +126,37 @@ class TestLessonGraph:
         py_files = list(tmp_path.glob("*.py"))
         assert py_files == []
 
+    def test_force_overwrites_existing(self, tmp_path: pathlib.Path) -> None:
+        """force=True should overwrite an existing lesson file."""
+        model = FakeListChatModel(responses=[VALID_LESSON])
+        graph = create_lesson_graph(model=model)
+        # Create an existing file that will collide
+        result = graph.invoke(
+            {
+                "topic": "test concept",
+                "domain_name": "_test_graph",
+                "target_dir": tmp_path,
+                "max_iterations": 3,
+            },
+        )
+        assert result["status"] == "committed"
+        existing_path = pathlib.Path(result["output_path"])
+        assert existing_path.exists()
+
+        # Re-run with force — should overwrite
+        model2 = FakeListChatModel(responses=[VALID_LESSON])
+        graph2 = create_lesson_graph(model=model2)
+        result2 = graph2.invoke(
+            {
+                "topic": "test concept",
+                "domain_name": "_test_graph",
+                "target_dir": tmp_path,
+                "max_iterations": 3,
+                "force": True,
+            },
+        )
+        assert result2["status"] == "committed"
+
     def test_max_retries_respected(self, tmp_path: pathlib.Path) -> None:
         """After max retries, should stop retrying."""
         bad_code = "def broken( -> None:\n    pass"

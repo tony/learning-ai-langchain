@@ -180,7 +180,7 @@ def write_output(state: LessonGeneratorState) -> dict[str, t.Any]:
 
     metadata = LessonMetadata.model_validate_json(state["metadata_json"])
     target = pathlib.Path(state["target_dir"]) / metadata.filename
-    write_lesson(target, state["rendered_code"])
+    write_lesson(target, state["rendered_code"], force=state.get("force", False))
     return {
         "output_path": str(target),
         "status": "committed",

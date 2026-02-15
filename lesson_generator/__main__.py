@@ -110,6 +110,7 @@ def main() -> None:
             "target_dir": target_dir,
             "max_iterations": args.max_retries,
             "dry_run": args.dry_run,
+            "force": args.force,
         },
     )
 
