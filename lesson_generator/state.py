@@ -5,6 +5,36 @@ from __future__ import annotations
 import typing as t
 
 
+class LessonGeneratorInput(t.TypedDict, total=False):
+    """Input schema for the lesson generation graph.
+
+    Defines the fields that callers (CLI, Studio UI) must or may provide
+    when invoking the graph.
+
+    Attributes
+    ----------
+    topic : str
+        The lesson topic to generate content for.
+    domain_name : str
+        Name of the domain (e.g. ``"dsa"``, ``"asyncio"``).
+    target_dir : str
+        Directory where the generated lesson will be written.
+    max_iterations : int
+        Maximum number of generation/fix attempts.
+    dry_run : bool
+        If ``True``, skip writing output to disk.
+    force : bool
+        If ``True``, overwrite existing output files.
+    """
+
+    topic: t.Required[str]
+    domain_name: t.Required[str]
+    target_dir: str
+    max_iterations: int
+    dry_run: bool
+    force: bool
+
+
 class LessonGeneratorState(t.TypedDict, total=False):
     """State flowing through the lesson generation graph.
 

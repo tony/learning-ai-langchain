@@ -13,7 +13,7 @@ from lesson_generator.nodes import (
     validate_lesson,
     write_output,
 )
-from lesson_generator.state import LessonGeneratorState
+from lesson_generator.state import LessonGeneratorInput, LessonGeneratorState
 
 
 def _should_retry(state: LessonGeneratorState) -> str:
@@ -58,7 +58,7 @@ def create_lesson_graph(
     generate_lesson = make_generate_node(model)
     fix_lesson = make_fix_node(model)
 
-    graph = StateGraph(LessonGeneratorState)
+    graph = StateGraph(LessonGeneratorState, input_schema=LessonGeneratorInput)
     graph.add_node("load_context", load_context)
     graph.add_node("generate_lesson", generate_lesson)  # type: ignore[arg-type]
     graph.add_node("validate_lesson", validate_lesson)
