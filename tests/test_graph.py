@@ -105,9 +105,8 @@ class TestLessonGraph:
                 "max_iterations": 3,
             },
         )
-        assert result["status"] in ("committed", "failed")
-        if result["status"] == "committed":
-            assert pathlib.Path(result["output_path"]).exists()
+        assert result["status"] == "committed"
+        assert pathlib.Path(result["output_path"]).exists()
 
     def test_dry_run_skips_write(self, tmp_path: pathlib.Path) -> None:
         """dry_run=True should skip writing and return status 'dry_run'."""
