@@ -207,6 +207,27 @@ def test_graph_file_exists_returns_failed(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.usefixtures("_register_test_domain")
+def test_graph_strips_code_fences(tmp_path: pathlib.Path) -> None:
+    """LLM output wrapped in markdown fences should be stripped and committed."""
+    fenced = f"```python\n{VALID_LESSON}\n```"
+    model = FakeListChatModel(responses=[fenced])
+    graph = _build_graph(model)
+    result = graph.invoke(
+        {
+            "topic": "fenced output",
+            "domain_name": "_test_graph",
+            "target_dir": str(tmp_path),
+            "max_iterations": 3,
+        },
+    )
+    assert result["status"] == "committed"
+    output = pathlib.Path(result["output_path"])
+    content = output.read_text(encoding="utf-8")
+    assert not content.startswith("```")
+    assert not content.rstrip().endswith("```")
+
+
+@pytest.mark.usefixtures("_register_test_domain")
 def test_graph_max_retries_respected(tmp_path: pathlib.Path) -> None:
     """After max retries, should stop retrying."""
     bad_code = "def broken( -> None:\n    pass"
