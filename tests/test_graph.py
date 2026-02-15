@@ -157,6 +157,26 @@ class TestLessonGraph:
         )
         assert result2["status"] == "committed"
 
+    def test_topic_sanitized_in_filename(self, tmp_path: pathlib.Path) -> None:
+        """Topics with path traversal characters should be sanitized."""
+        model = FakeListChatModel(responses=[VALID_LESSON])
+        graph = create_lesson_graph(model=model)
+        result = graph.invoke(
+            {
+                "topic": "foo/../../../escape",
+                "domain_name": "_test_graph",
+                "target_dir": tmp_path,
+                "max_iterations": 3,
+            },
+        )
+        assert result["status"] == "committed"
+        output = pathlib.Path(result["output_path"])
+        # File must be inside target_dir
+        assert output.resolve().is_relative_to(tmp_path.resolve())
+        # Filename must not contain path separators
+        assert "/" not in output.name
+        assert ".." not in output.name
+
     def test_max_retries_respected(self, tmp_path: pathlib.Path) -> None:
         """After max retries, should stop retrying."""
         bad_code = "def broken( -> None:\n    pass"

@@ -8,6 +8,7 @@ are created as closures inside :func:`make_generation_nodes`.
 from __future__ import annotations
 
 import pathlib
+import re
 import typing as t
 
 from langchain_core.language_models import BaseChatModel
@@ -70,7 +71,9 @@ def make_generate_node(
         """Generate a Python lesson using the LLM."""
         config = get_domain(state["domain_name"])
         number = next_lesson_number(config)
-        filename = f"{number:03d}_{state['topic'].lower().replace(' ', '_')}.py"
+        safe_topic = re.sub(r"[^a-z0-9_]", "_", state["topic"].lower())
+        safe_topic = re.sub(r"_+", "_", safe_topic).strip("_")
+        filename = f"{number:03d}_{safe_topic}.py"
         existing_str = "\n".join(state.get("existing_lessons", [])) or "(none)"
 
         chain = GENERATE_LESSON_PROMPT | model
@@ -179,7 +182,10 @@ def write_output(state: LessonGeneratorState) -> dict[str, t.Any]:
         return {"status": "dry_run"}
 
     metadata = LessonMetadata.model_validate_json(state["metadata_json"])
-    target = pathlib.Path(state["target_dir"]) / metadata.filename
+    target_dir = pathlib.Path(state["target_dir"]).resolve()
+    target = (target_dir / metadata.filename).resolve()
+    if not target.is_relative_to(target_dir):
+        return {"status": "failed", "validation_errors": ["Path traversal detected"]}
     write_lesson(target, state["rendered_code"], force=state.get("force", False))
     return {
         "output_path": str(target),
