@@ -9,7 +9,7 @@ import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from lesson_generator.domains import _register
-from lesson_generator.graph import create_lesson_graph
+from lesson_generator.graph import _build_graph
 from lesson_generator.models import DomainConfig, PedagogyStyle, ProjectType
 from lesson_generator.state import LessonGeneratorState
 
@@ -71,7 +71,7 @@ def _register_test_domain(tmp_path: pathlib.Path) -> t.Iterator[None]:
 def test_graph_compiles() -> None:
     """Graph should compile without errors."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     assert graph is not None
 
 
@@ -79,7 +79,7 @@ def test_graph_compiles() -> None:
 def test_graph_has_expected_nodes() -> None:
     """Graph should contain all pipeline nodes."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     node_names = set(graph.get_graph().nodes)
     expected = {
         "load_context",
@@ -97,7 +97,7 @@ def test_graph_has_expected_nodes() -> None:
 def test_graph_success_path(tmp_path: pathlib.Path) -> None:
     """Valid code should flow through to committed status."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     result = graph.invoke(
         {
             "topic": "test concept",
@@ -114,7 +114,7 @@ def test_graph_success_path(tmp_path: pathlib.Path) -> None:
 def test_graph_dry_run_skips_write(tmp_path: pathlib.Path) -> None:
     """dry_run=True should skip writing and return status 'dry_run'."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     result = graph.invoke(
         {
             "topic": "test concept",
@@ -134,7 +134,7 @@ def test_graph_dry_run_skips_write(tmp_path: pathlib.Path) -> None:
 def test_graph_force_overwrites_existing(tmp_path: pathlib.Path) -> None:
     """force=True should overwrite an existing lesson file."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     # Create an existing file that will collide
     result = graph.invoke(
         {
@@ -150,7 +150,7 @@ def test_graph_force_overwrites_existing(tmp_path: pathlib.Path) -> None:
 
     # Re-run with force — should overwrite
     model2 = FakeListChatModel(responses=[VALID_LESSON])
-    graph2 = create_lesson_graph(model=model2)
+    graph2 = _build_graph(model2)
     result2 = graph2.invoke(
         {
             "topic": "test concept",
@@ -167,7 +167,7 @@ def test_graph_force_overwrites_existing(tmp_path: pathlib.Path) -> None:
 def test_graph_topic_sanitized_in_filename(tmp_path: pathlib.Path) -> None:
     """Topics with path traversal characters should be sanitized."""
     model = FakeListChatModel(responses=[VALID_LESSON])
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     result = graph.invoke(
         {
             "topic": "foo/../../../escape",
@@ -212,7 +212,7 @@ def test_graph_max_retries_respected(tmp_path: pathlib.Path) -> None:
     # Provide enough responses for generate + max_retries fixes
     responses = [bad_code] * 5
     model = FakeListChatModel(responses=responses)
-    graph = create_lesson_graph(model=model)
+    graph = _build_graph(model)
     result = graph.invoke(
         {
             "topic": "broken",

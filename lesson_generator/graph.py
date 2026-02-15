@@ -36,25 +36,21 @@ def _should_retry(state: LessonGeneratorState) -> str:
     return "fix_lesson"
 
 
-def create_lesson_graph(
-    model: BaseChatModel | None = None,
+def _build_graph(
+    model: BaseChatModel,
 ) -> CompiledStateGraph:  # type: ignore[type-arg]
-    """Create and compile the lesson generation pipeline graph.
+    """Compile the lesson generation pipeline with the given model.
 
     Parameters
     ----------
-    model : BaseChatModel | None
-        LLM to use for generation and fixing. Defaults to
-        ``ChatAnthropic(model="claude-sonnet-4-20250514")``.
+    model : BaseChatModel
+        LLM to use for generation and fixing.
 
     Returns
     -------
     CompiledStateGraph
         Compiled LangGraph ready for invocation.
     """
-    if model is None:
-        model = ChatAnthropic(model="claude-sonnet-4-20250514")  # type: ignore[call-arg]
-
     generate_lesson = make_generate_node(model)
     fix_lesson = make_fix_node(model)
 
@@ -73,3 +69,20 @@ def create_lesson_graph(
     graph.add_edge("write_output", "__end__")
 
     return graph.compile()
+
+
+def create_lesson_graph() -> CompiledStateGraph:  # type: ignore[type-arg]
+    """Zero-arg factory for ``langgraph.json``.
+
+    The LangGraph dev server classifies factory functions by parameter
+    count: a 1-param factory receives the runtime ``config`` dict as its
+    first argument, which would shadow a ``model`` parameter.  This
+    wrapper takes no arguments so the server calls it cleanly.
+
+    Returns
+    -------
+    CompiledStateGraph
+        Compiled LangGraph ready for invocation.
+    """
+    model = ChatAnthropic(model="claude-sonnet-4-20250514")  # type: ignore[call-arg]
+    return _build_graph(model)
