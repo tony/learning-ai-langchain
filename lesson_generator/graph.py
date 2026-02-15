@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import typing as t
+
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
-from langgraph.graph import END, START
-from langgraph.graph.state import CompiledStateGraph, StateGraph
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from lesson_generator.nodes import (
     load_context,
@@ -16,8 +18,10 @@ from lesson_generator.nodes import (
 )
 from lesson_generator.state import LessonGeneratorInput, LessonGeneratorState
 
+_RetryRoute = t.Literal["write_output", "fix_lesson"]
 
-def _should_retry(state: LessonGeneratorState) -> str:
+
+def _should_retry(state: LessonGeneratorState) -> _RetryRoute:
     """Route after validation: retry, or write output.
 
     Parameters
@@ -27,8 +31,8 @@ def _should_retry(state: LessonGeneratorState) -> str:
 
     Returns
     -------
-    str
-        Next node name: ``"write_output"`` or ``"fix_lesson"``.
+    Literal["write_output", "fix_lesson"]
+        Next node name.
     """
     if state.get("validation_ok"):
         return "write_output"
@@ -85,5 +89,5 @@ def create_lesson_graph() -> CompiledStateGraph:  # type: ignore[type-arg]
     CompiledStateGraph
         Compiled LangGraph ready for invocation.
     """
-    model = ChatAnthropic(model="claude-sonnet-4-20250514")  # type: ignore[call-arg]
+    model = ChatAnthropic(model="claude-sonnet-4-5")  # type: ignore[call-arg]
     return _build_graph(model)

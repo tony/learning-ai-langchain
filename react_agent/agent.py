@@ -37,7 +37,7 @@ def create_agent(
     ----------
     model : BaseChatModel | None
         The chat model to use. Defaults to ChatAnthropic with
-        claude-sonnet-4-20250514.
+        claude-sonnet-4-5.
 
     Returns
     -------
@@ -45,7 +45,7 @@ def create_agent(
         A compiled LangGraph agent.
     """
     if model is None:
-        model = ChatAnthropic(model="claude-sonnet-4-20250514")  # type: ignore[call-arg]
+        model = ChatAnthropic(model="claude-sonnet-4-5")  # type: ignore[call-arg]
     return create_react_agent(model, [search])
 
 
