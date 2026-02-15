@@ -249,6 +249,87 @@ tests/
 └── test_tools.py        # Tool functions (read_template, validate_in_temp, etc.)
 ```
 
+## LangGraph Dev Server
+
+### Starting the Server
+
+```bash
+uv run langgraph dev --no-browser        # local only
+uv run langgraph dev --tunnel --no-browser  # with cloudflare tunnel
+```
+
+The server runs on `http://localhost:2024`. Configuration is in `langgraph.json`:
+- `lesson_generator` — `./lesson_generator/graph.py:create_lesson_graph`
+- `react_agent` — `./react_agent/agent.py:create_react_graph`
+
+### Checking if the Server is Running
+
+```bash
+curl -s http://localhost:2024/ok          # => {"ok":true}
+curl -s http://localhost:2024/info | jq . # server version, flags, host info
+```
+
+### Querying the API with curl
+
+All search/list endpoints use `POST` with a JSON body. Individual resource GETs use `GET`.
+
+**List assistants (graphs):**
+```bash
+curl -s http://localhost:2024/assistants/search \
+  -X POST -H 'Content-Type: application/json' -d '{}' | jq .
+```
+
+**Search threads:**
+```bash
+curl -s http://localhost:2024/threads/search \
+  -X POST -H 'Content-Type: application/json' -d '{"limit": 5}' \
+  | jq '[.[] | {thread_id, status, updated_at}]'
+```
+
+**List runs for a thread:**
+```bash
+curl -s http://localhost:2024/threads/{thread_id}/runs | jq .
+```
+
+**Get a specific run (runs are thread-scoped):**
+```bash
+curl -s http://localhost:2024/threads/{thread_id}/runs/{run_id} | jq .
+```
+
+**Get thread state (final values after a run):**
+```bash
+curl -s http://localhost:2024/threads/{thread_id}/state | jq .values
+```
+
+**Find a run by ID when you don't know the thread** — iterate threads:
+```bash
+for tid in $(curl -s http://localhost:2024/threads/search \
+  -X POST -H 'Content-Type: application/json' -d '{"limit": 50}' \
+  | jq -r '.[].thread_id'); do
+  result=$(curl -s "http://localhost:2024/threads/$tid/runs/{run_id}")
+  if echo "$result" | jq -e '.run_id' >/dev/null 2>&1; then
+    echo "Thread: $tid"
+    echo "$result" | jq .
+    break
+  fi
+done
+```
+
+**Create a run (invoke a graph):**
+```bash
+curl -s http://localhost:2024/threads/{thread_id}/runs \
+  -X POST -H 'Content-Type: application/json' \
+  -d '{"assistant_id": "{assistant_id}", "input": {"topic": "example", "domain_name": "asyncio"}}'
+```
+
+### Key API Patterns
+
+- Threads are created implicitly on first run, or explicitly via `POST /threads`
+- Runs are always scoped to a thread: `/threads/{thread_id}/runs/{run_id}`
+- A run with `"status": "success"` means the graph completed without crashing — check `thread/state` for the graph's own status (e.g., `"failed"` if validation failed after max retries)
+- Search endpoints (`/threads/search`, `/assistants/search`) require `POST` with JSON body
+- Info endpoints (`/ok`, `/info`) use `GET`
+
 ## Debugging Tips
 
 When stuck in debugging loops:
