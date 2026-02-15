@@ -158,7 +158,10 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
             )
         tools_run.append("ruff")
         if ruff_result.returncode != 0:
-            errors.append(f"ruff: {ruff_result.stdout.strip()}")
+            msg = ruff_result.stdout.strip()
+            if ruff_result.stderr.strip():
+                msg = f"{msg}\nstderr: {ruff_result.stderr.strip()}"
+            errors.append(f"ruff: {msg}")
 
         # --- mypy ---
         if config.strict_mypy:
@@ -187,7 +190,10 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
             )
         tools_run.append("mypy")
         if mypy_result.returncode != 0:
-            errors.append(f"mypy: {mypy_result.stdout.strip()}")
+            msg = mypy_result.stdout.strip()
+            if mypy_result.stderr.strip():
+                msg = f"{msg}\nstderr: {mypy_result.stderr.strip()}"
+            errors.append(f"mypy: {msg}")
 
     return ValidationResult(
         is_valid=len(errors) == 0,
