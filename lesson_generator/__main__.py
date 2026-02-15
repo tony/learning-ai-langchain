@@ -55,7 +55,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "--max-retries",
         type=int,
         default=3,
-        help="Maximum validation retry attempts (default: 3).",
+        choices=range(0, 11),
+        metavar="N",
+        help="Maximum validation retry attempts, 0-10 (default: 3).",
     )
     return parser
 
