@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+"""
+{number}. {title}.
+
+Concepts:
+- {concepts}
+
+Narrative:
+{narrative}
+
+Doctests:
+Run `python -m doctest -v thisfile.py` or `pytest --doctest-modules` to verify.
+"""
+
+from __future__ import annotations
+
+
+def demonstrate_concept() -> str:
+    """Demonstrate the core concept of this lesson.
+
+    Examples
+    --------
+    >>> demonstrate_concept()
+    'Expected Result'
+    """
+    return "Expected Result"
+
+
+def main() -> None:
+    """Run the main demonstration.
+
+    Examples
+    --------
+    >>> main()
+    Expected Result
+    """
+    result = demonstrate_concept()
+    print(result)
+
+
+if __name__ == "__main__":
+    import doctest
+
+    doctest.testmod()
+    main()

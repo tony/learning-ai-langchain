@@ -774,6 +774,7 @@ dependencies = [
     { name = "langchain-anthropic" },
     { name = "langchain-openai" },
     { name = "langgraph" },
+    { name = "pydantic" },
     { name = "python-dotenv" },
 ]
 
@@ -790,6 +791,7 @@ requires-dist = [
     { name = "langchain-anthropic", editable = "../../../study/ai-agents/langchain/libs/partners/anthropic" },
     { name = "langchain-openai", editable = "../../../study/ai-agents/langchain/libs/partners/openai" },
     { name = "langgraph", editable = "../../../study/ai-agents/langgraph/libs/langgraph" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
 ]
 
