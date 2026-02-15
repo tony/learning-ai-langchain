@@ -7,7 +7,6 @@ are created as closures inside :func:`make_generation_nodes`.
 
 from __future__ import annotations
 
-import pathlib
 import re
 import typing as t
 from collections.abc import Callable
@@ -20,8 +19,9 @@ from lesson_generator.prompts import FIX_LESSON_PROMPT, GENERATE_LESSON_PROMPT
 from lesson_generator.state import LessonGeneratorState
 from lesson_generator.tools import (
     list_existing_lessons,
-    next_lesson_number,
+    merged_next_lesson_number,
     read_template,
+    resolve_output_dir,
     validate_in_temp,
     write_lesson,
 )
@@ -73,9 +73,7 @@ def load_context(state: LessonGeneratorState) -> dict[str, t.Any]:
     """
     config = get_domain(state["domain_name"])
     template = read_template(config)
-    target_dir = state.get("target_dir")
-    override = pathlib.Path(target_dir) if target_dir is not None else None
-    existing = list_existing_lessons(config, target_dir=override)
+    existing = list_existing_lessons(config)
     return {
         "template_content": template,
         "existing_lessons": existing,
@@ -103,9 +101,8 @@ def make_generate_node(
     def generate_lesson(state: LessonGeneratorState) -> dict[str, t.Any]:
         """Generate a Python lesson using the LLM."""
         config = get_domain(state["domain_name"])
-        target_dir = state.get("target_dir")
-        override = pathlib.Path(target_dir) if target_dir is not None else None
-        number = next_lesson_number(config, target_dir=override)
+        output_dir = resolve_output_dir(config, target_dir=state.get("target_dir"))
+        number = merged_next_lesson_number(config, output_dir)
         safe_topic = re.sub(r"[^a-z0-9_]", "_", state["topic"].lower())
         safe_topic = re.sub(r"_+", "_", safe_topic).strip("_")
         filename = f"{number:03d}_{safe_topic}.py"
@@ -225,21 +222,10 @@ def write_output(state: LessonGeneratorState) -> dict[str, t.Any]:
         return {"status": "dry_run"}
 
     metadata = LessonMetadata.model_validate_json(state["metadata_json"])
-    raw_target = state.get("target_dir")
-    if raw_target is not None:
-        target_dir = pathlib.Path(raw_target).resolve()
-    else:
-        config = get_domain(state["domain_name"])
-        if config.project_path is None:
-            return {
-                "status": "failed",
-                "validation_errors": [
-                    "No target_dir provided and domain has no project_path",
-                ],
-            }
-        target_dir = (config.project_path / config.lesson_dir).resolve()
+    config = get_domain(state["domain_name"])
+    target_dir = resolve_output_dir(config, target_dir=state.get("target_dir"))
     target = (target_dir / metadata.filename).resolve()
-    if not target.is_relative_to(target_dir):
+    if not target.is_relative_to(target_dir.resolve()):
         return {"status": "failed", "validation_errors": ["Path traversal detected"]}
     try:
         write_lesson(target, state["rendered_code"], force=state.get("force", False))

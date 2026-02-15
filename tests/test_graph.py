@@ -198,6 +198,7 @@ def test_graph_file_exists_returns_failed(tmp_path: pathlib.Path) -> None:
     metadata = LessonMetadata(number=1, title="topic", filename="001_topic.py")
     state: LessonGeneratorState = {
         "validation_ok": True,
+        "domain_name": "_test_graph",
         "target_dir": str(tmp_path),
         "rendered_code": "# new content",
         "metadata_json": metadata.model_dump_json(),
@@ -228,8 +229,17 @@ def test_graph_strips_code_fences(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.usefixtures("_register_test_domain")
-def test_graph_default_target_dir(tmp_path: pathlib.Path) -> None:
-    """Omitting target_dir should fall back to domain project_path/lesson_dir."""
+def test_graph_default_target_dir(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Omitting target_dir should fall back to deterministic temp dir."""
+    fake_tmp = tmp_path / "faketmp"
+    fake_tmp.mkdir()
+    monkeypatch.setattr(
+        "lesson_generator.tools.tempfile.gettempdir", lambda: str(fake_tmp)
+    )
+    monkeypatch.setattr("lesson_generator.tools.getpass.getuser", lambda: "testuser")
     model = FakeListChatModel(responses=[VALID_LESSON])
     graph = _build_graph(model)
     result = graph.invoke(
@@ -241,8 +251,10 @@ def test_graph_default_target_dir(tmp_path: pathlib.Path) -> None:
     )
     assert result["status"] == "committed"
     output = pathlib.Path(result["output_path"])
-    # Should land inside project_path/lesson_dir ("src")
-    assert output.parent == tmp_path / "src"
+    expected_dir = (
+        tmp_path / "faketmp" / "lesson-generator" / "testuser" / "_test_graph"
+    )
+    assert output.parent == expected_dir
     assert output.exists()
 
 

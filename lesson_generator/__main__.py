@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+import typing as t
 
 from dotenv import load_dotenv
 
@@ -70,11 +71,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Lazy imports to avoid loading LangChain/LangGraph for --list-domains
-    from lesson_generator.domains import (
-        get_domain,
-        list_domains,
-        validate_environment,
-    )
+    from lesson_generator.domains import get_domain, list_domains
 
     if args.list_domains:
         for name in list_domains():
@@ -86,39 +83,24 @@ def main() -> None:
         parser.error("--domain and --topic are required.")
 
     try:
-        config = get_domain(args.domain)
+        get_domain(args.domain)
     except KeyError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    # Determine output directory
-    if args.out:
-        target_dir = args.out
-    elif config.project_path:
-        env_ok, env_msg = validate_environment(config)
-        if not env_ok:
-            print(f"Error: {env_msg}", file=sys.stderr)
-            sys.exit(1)
-        target_dir = config.project_path / config.lesson_dir
-    else:
-        parser.error(
-            f"Domain {args.domain!r} has no project path. Use --out to specify "
-            "an output location.",
-        )
-
     from lesson_generator.graph import create_lesson_graph
 
     graph = create_lesson_graph()
-    result = graph.invoke(
-        {
-            "topic": args.topic,
-            "domain_name": args.domain,
-            "target_dir": str(target_dir),
-            "max_iterations": args.max_retries,
-            "dry_run": args.dry_run,
-            "force": args.force,
-        },
-    )
+    inputs: dict[str, t.Any] = {
+        "topic": args.topic,
+        "domain_name": args.domain,
+        "max_iterations": args.max_retries,
+        "dry_run": args.dry_run,
+        "force": args.force,
+    }
+    if args.out:
+        inputs["target_dir"] = str(args.out)
+    result = graph.invoke(inputs)
 
     status = result.get("status", "unknown")
     if status == "committed":

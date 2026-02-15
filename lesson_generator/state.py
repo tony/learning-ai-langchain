@@ -26,7 +26,10 @@ class LessonGeneratorInput(BaseModel):
     )
     target_dir: str | None = Field(
         default=None,
-        description="Output directory (defaults to domain project)",
+        description=(
+            "Output directory"
+            " (defaults to temp dir: {tempdir}/lesson-generator/{user}/{domain}/)"
+        ),
     )
     max_iterations: int = Field(
         default=3,

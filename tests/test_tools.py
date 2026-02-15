@@ -9,8 +9,10 @@ import pytest
 from lesson_generator.models import DomainConfig, PedagogyStyle, ProjectType
 from lesson_generator.tools import (
     list_existing_lessons,
+    merged_next_lesson_number,
     next_lesson_number,
     read_template,
+    resolve_output_dir,
     validate_in_temp,
     write_lesson,
 )
@@ -290,3 +292,98 @@ def test_write_lesson_force_overwrite(tmp_path: pathlib.Path) -> None:
     path.write_text("original")
     write_lesson(path, "new content", force=True)
     assert path.read_text() == "new content"
+
+
+# ---------------------------------------------------------------------------
+# resolve_output_dir
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_output_dir_explicit_target(tmp_path: pathlib.Path) -> None:
+    """resolve_output_dir should return the provided path when target_dir is set."""
+    config = DomainConfig(
+        name="test",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+    )
+    result = resolve_output_dir(config, target_dir=str(tmp_path / "custom"))
+    assert result == (tmp_path / "custom").resolve()
+
+
+def test_resolve_output_dir_default_temp(monkeypatch: pytest.MonkeyPatch) -> None:
+    """resolve_output_dir should return a temp path when target_dir is omitted."""
+    monkeypatch.setattr(
+        "lesson_generator.tools.tempfile.gettempdir", lambda: "/mock/tmp"
+    )
+    monkeypatch.setattr("lesson_generator.tools.getpass.getuser", lambda: "testuser")
+    config = DomainConfig(
+        name="asyncio",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+    )
+    result = resolve_output_dir(config)
+    assert result == pathlib.Path("/mock/tmp/lesson-generator/testuser/asyncio")
+
+
+def test_resolve_output_dir_deterministic(monkeypatch: pytest.MonkeyPatch) -> None:
+    """resolve_output_dir should return the same path for the same config."""
+    monkeypatch.setattr(
+        "lesson_generator.tools.tempfile.gettempdir", lambda: "/mock/tmp"
+    )
+    monkeypatch.setattr("lesson_generator.tools.getpass.getuser", lambda: "alice")
+    config = DomainConfig(
+        name="dsa",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+    )
+    assert resolve_output_dir(config) == resolve_output_dir(config)
+
+
+def test_resolve_output_dir_collision_free(monkeypatch: pytest.MonkeyPatch) -> None:
+    """resolve_output_dir should produce different paths for different domains."""
+    monkeypatch.setattr(
+        "lesson_generator.tools.tempfile.gettempdir", lambda: "/mock/tmp"
+    )
+    monkeypatch.setattr("lesson_generator.tools.getpass.getuser", lambda: "bob")
+    config_a = DomainConfig(
+        name="dsa",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+    )
+    config_b = DomainConfig(
+        name="asyncio",
+        pedagogy=PedagogyStyle.CONCEPT_FIRST,
+        project_type=ProjectType.LESSON_BASED,
+    )
+    assert resolve_output_dir(config_a) != resolve_output_dir(config_b)
+
+
+# ---------------------------------------------------------------------------
+# merged_next_lesson_number
+# ---------------------------------------------------------------------------
+
+
+def test_merged_next_lesson_number_uses_project_max(
+    test_domain_config: DomainConfig,
+    tmp_path: pathlib.Path,
+) -> None:
+    """merged_next_lesson_number should use project max when output dir is empty."""
+    empty_output = tmp_path / "empty_output"
+    empty_output.mkdir()
+    # test_domain_config has 001 and 002 in project → project next = 3
+    result = merged_next_lesson_number(test_domain_config, empty_output)
+    assert result == 3
+
+
+def test_merged_next_lesson_number_uses_output_max(
+    test_domain_config: DomainConfig,
+    tmp_path: pathlib.Path,
+) -> None:
+    """merged_next_lesson_number should use output max when it is higher."""
+    output_dir = tmp_path / "output_lessons"
+    output_dir.mkdir()
+    (output_dir / "010_advanced.py").write_text("# advanced", encoding="utf-8")
+    # test_domain_config has 001 and 002 → project next = 3
+    # output_dir has 010 → output next = 11
+    result = merged_next_lesson_number(test_domain_config, output_dir)
+    assert result == 11

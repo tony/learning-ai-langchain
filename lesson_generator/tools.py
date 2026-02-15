@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import getpass
 import pathlib
 import re
 import subprocess
@@ -104,6 +105,69 @@ def next_lesson_number(
         if m:
             max_num = max(max_num, int(m.group(1)))
     return max_num + 1
+
+
+def resolve_output_dir(
+    config: DomainConfig,
+    *,
+    target_dir: str | None = None,
+) -> pathlib.Path:
+    """Resolve the output directory for a generated lesson.
+
+    When *target_dir* is provided explicitly it is used as-is.
+    Otherwise a deterministic, cross-platform temp directory is
+    returned: ``{tempdir}/lesson-generator/{user}/{domain}/``.
+
+    Parameters
+    ----------
+    config : DomainConfig
+        Domain configuration (used for the domain name component).
+    target_dir : str | None
+        Explicit override supplied by the caller (CLI ``--out`` or
+        graph input).
+
+    Returns
+    -------
+    pathlib.Path
+        Resolved absolute output directory.
+    """
+    if target_dir is not None:
+        return pathlib.Path(target_dir).resolve()
+    return (
+        pathlib.Path(tempfile.gettempdir())
+        / "lesson-generator"
+        / getpass.getuser()
+        / config.name
+    )
+
+
+def merged_next_lesson_number(
+    config: DomainConfig,
+    output_dir: pathlib.Path,
+) -> int:
+    """Determine next lesson number considering both project and output dir.
+
+    Scans the real project directory (via *config*) **and** the
+    *output_dir* for existing numbered lessons, then returns
+    ``max(project_max, output_max) + 1``.  This avoids numbering
+    collisions regardless of whether previous lessons were written to
+    the real project or to the (possibly temp) output directory.
+
+    Parameters
+    ----------
+    config : DomainConfig
+        Domain configuration (scans ``config.project_path``).
+    output_dir : pathlib.Path
+        Output directory to scan for additional lessons.
+
+    Returns
+    -------
+    int
+        Next available lesson number.
+    """
+    project_next = next_lesson_number(config)
+    output_next = next_lesson_number(config, target_dir=output_dir)
+    return max(project_next, output_next)
 
 
 def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
