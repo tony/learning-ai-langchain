@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pathlib
-import typing as t
+from collections.abc import Iterator
 
 import pytest
 
@@ -18,7 +18,7 @@ from lesson_generator.models import DomainConfig, PedagogyStyle, ProjectType
 
 
 @pytest.fixture()
-def _clean_registry() -> t.Iterator[None]:
+def _clean_registry() -> Iterator[None]:
     """Snapshot and restore the registry around each test."""
     original = dict(_REGISTRY)
     yield

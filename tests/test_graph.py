@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pathlib
-import typing as t
+from collections.abc import Iterator
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
 
 @pytest.fixture()
-def _register_test_domain(tmp_path: pathlib.Path) -> t.Iterator[None]:
+def _register_test_domain(tmp_path: pathlib.Path) -> Iterator[None]:
     """Register a temporary test domain and clean up after."""
     src = tmp_path / "src"
     src.mkdir()
