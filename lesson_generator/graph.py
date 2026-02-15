@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
+from langgraph.graph import END, START
 from langgraph.graph.state import CompiledStateGraph, StateGraph
 
 from lesson_generator.nodes import (
@@ -61,12 +62,12 @@ def _build_graph(
     graph.add_node("fix_lesson", fix_lesson)  # type: ignore[arg-type]
     graph.add_node("write_output", write_output)
 
-    graph.set_entry_point("load_context")
+    graph.add_edge(START, "load_context")
     graph.add_edge("load_context", "generate_lesson")
     graph.add_edge("generate_lesson", "validate_lesson")
     graph.add_conditional_edges("validate_lesson", _should_retry)
     graph.add_edge("fix_lesson", "validate_lesson")
-    graph.add_edge("write_output", "__end__")
+    graph.add_edge("write_output", END)
 
     return graph.compile()
 
