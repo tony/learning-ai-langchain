@@ -873,7 +873,7 @@ test = [
 
 [[package]]
 name = "langgraph-cli"
-version = "0.4.17"
+version = "0.4.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -881,9 +881,9 @@ dependencies = [
     { name = "langgraph-sdk" },
     { name = "python-dotenv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/e9/3a1d50b09de2ec067712d7d8cdad8677161d0af6a0a319da8512ff4022cb/langgraph_cli-0.4.17.tar.gz", hash = "sha256:2c7e93c1915558752910091f7faf231f9ff41dd63fa0e504a80993c424ac82c6", size = 875967, upload-time = "2026-03-13T20:10:07.6Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/d9/43f4c5083a9be70edf2add6d46c20bf8f6b69fca55d9e61a42ccd846886d/langgraph_cli-0.4.18.tar.gz", hash = "sha256:843f5990c18e425924b7fe34a164a13fb902d29ac92ceda9d21aa4b56057a91e", size = 876731, upload-time = "2026-03-15T23:55:47.4Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/6b/3b12c89919751ce212197e37bf820fef5376d5240d4c16b0517735c80afe/langgraph_cli-0.4.17-py3-none-any.whl", hash = "sha256:58d08d25ffb750d153400997bd1e73cc7f349bdcbe6533ed464855c171a89486", size = 55400, upload-time = "2026-03-13T20:10:06.713Z" },
+    { url = "https://files.pythonhosted.org/packages/22/04/0e7be7b6a4bcfe5f939495e7f0de2f8d911d481bf75848feb3aff3ac7c83/langgraph_cli-0.4.18-py3-none-any.whl", hash = "sha256:2327eb2b8859d5fd2c44bfc4f73def78b78c0d0bc4593de3b8cf37353d001f9d", size = 55593, upload-time = "2026-03-15T23:55:46.099Z" },
 ]
 
 [package.optional-dependencies]
