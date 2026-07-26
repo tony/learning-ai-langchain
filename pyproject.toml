@@ -31,7 +31,7 @@ ruff = false
 dev = [
   "pytest",
   "pytest-asyncio",
-  "ruff",
+  "ruff>=0.16.0",
   "mypy",
   "langgraph-cli[inmem]>=0.4.12",
 ]
