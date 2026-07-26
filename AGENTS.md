@@ -217,6 +217,7 @@ class SomeFixture(t.NamedTuple):
     input_value: str
     expected: str
 
+
 SOME_FIXTURES: list[SomeFixture] = [
     SomeFixture(
         test_id="basic_case",
@@ -229,6 +230,7 @@ SOME_FIXTURES: list[SomeFixture] = [
         expected="",
     ),
 ]
+
 
 @pytest.mark.parametrize(
     list(SomeFixture._fields),
