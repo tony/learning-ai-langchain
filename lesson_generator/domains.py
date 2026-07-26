@@ -75,8 +75,10 @@ def validate_environment(config: DomainConfig) -> tuple[bool, str]:
     if not config.project_path.is_dir():
         return (
             False,
-            f"Target project not found at {config.project_path}. "
-            "Use --out to specify an explicit output path.",
+            (
+                f"Target project not found at {config.project_path}. "
+                "Use --out to specify an explicit output path."
+            ),
         )
     return True, "OK"
 
