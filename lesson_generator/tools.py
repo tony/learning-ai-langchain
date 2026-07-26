@@ -219,6 +219,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 capture_output=True,
                 text=True,
                 timeout=120,
+                check=False,
             )
         except subprocess.TimeoutExpired:
             return ValidationResult(
@@ -238,6 +239,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 capture_output=True,
                 text=True,
                 timeout=120,
+                check=False,
             )
         except subprocess.TimeoutExpired:
             return ValidationResult(
@@ -271,6 +273,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                 capture_output=True,
                 text=True,
                 timeout=120,
+                check=False,
             )
         except subprocess.TimeoutExpired:
             return ValidationResult(
@@ -308,6 +311,7 @@ def validate_in_temp(code: str, config: DomainConfig) -> ValidationResult:
                     capture_output=True,
                     text=True,
                     timeout=120,
+                    check=False,
                 )
             except subprocess.TimeoutExpired:
                 return ValidationResult(
