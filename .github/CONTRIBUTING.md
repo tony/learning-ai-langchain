@@ -188,8 +188,12 @@ $ curl -s http://localhost:2024/threads/{thread_id}/runs \
     -d '{"assistant_id": "lesson_generator", "input": {"topic": "hash tables", "domain_name": "dsa"}}'
 ```
 
-Find a run by ID without knowing its thread — search recent threads and
-check each one's runs for a match:
+Find a run by ID without knowing its thread. Set the run ID first, then
+search recent threads and check each one's runs for a match:
+
+```console
+$ run_id=<the-run-id-you-have>
+```
 
 ```console
 $ for tid in $(curl -s http://localhost:2024/threads/search \
@@ -197,7 +201,7 @@ $ for tid in $(curl -s http://localhost:2024/threads/search \
     -H 'Content-Type: application/json' \
     -d '{"limit": 50}' \
     | jq -r '.[].thread_id'); do
-    result=$(curl -s "http://localhost:2024/threads/$tid/runs/{run_id}")
+    result=$(curl -s "http://localhost:2024/threads/$tid/runs/$run_id")
     if echo "$result" | jq -e '.run_id' >/dev/null 2>&1; then
       echo "Thread: $tid"
       echo "$result" | jq .
