@@ -58,9 +58,12 @@ $ uv run pytest
 ```
 
 Each has a `just` shortcut (`just fmt`, `just lint`, `just lint-fix`,
-`just typecheck`, `just test`) in the `justfile`. There is no CI in this
-repository, so the `justfile` — not a workflow — is the order of record: a
-change is done when all four gates above pass locally.
+`just typecheck`, `just test`) in the `justfile`. CI
+(`.github/workflows/ci.yml`) runs the check forms of all four on Python 3.15,
+after cloning LangChain and LangGraph into the sibling layout above at the
+commits pinned in the workflow, and installs `uv.lock` as is
+(`uv sync --frozen`). Move those pins whenever `uv.lock` is re-resolved
+against newer checkouts.
 
 No prompted example runs as part of `pytest`; see
 [WRITING.md](WRITING.md#documented-examples-that-run) for why, and for the
