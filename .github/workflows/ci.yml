@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.15"
+    steps:
+      - uses: actions/checkout@v7
+
+      # [tool.uv.sources] installs LangChain and LangGraph editable from
+      # sibling checkouts under ../../../study/ai-agents/. Recreate them at
+      # the commits uv.lock was resolved against; move these with the lock.
+      - name: Check out LangChain and LangGraph
+        env:
+          LANGCHAIN_REF: 8ace87e7a6493d41d4c61bb41a637052367b27f3
+          LANGGRAPH_REF: 69d98cc0d98c87a255ddef7ef1f0fee26c940eb6
+        run: |
+          root="$GITHUB_WORKSPACE/../../../study/ai-agents"
+          fetch() {
+            git init -q "$root/$1"
+            git -C "$root/$1" fetch -q --depth 1 "https://github.com/langchain-ai/$1.git" "$2"
+            git -C "$root/$1" checkout -q FETCH_HEAD
+          }
+          fetch langchain "$LANGCHAIN_REF"
+          fetch langgraph "$LANGGRAPH_REF"
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dev tooling
+        run: uv sync --frozen --all-groups
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy lesson_generator react_agent
+
+      - name: Tests
+        run: uv run pytest
